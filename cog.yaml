@@ -1,0 +1,32 @@
+# Configuration for Cog
+build:
+  gpu: true
+  cuda: "12.1"
+  python_version: "3.11"
+  system_packages:
+    - "libgl1-mesa-glx"
+    - "ffmpeg"
+    - "libsm6"
+    - "libxext6"
+    - "libglib2.0-0"
+  python_packages:
+    - "torch==2.5.1"
+    - "torchvision==0.20.1"
+    - "diffusers==0.32.0"
+    - "transformers==4.47.1"
+    - "sentencepiece==0.2.0"
+    - "safetensors==0.4.5"
+    - "huggingface-hub==0.27.0"
+    - "einops==0.8.0"
+    - "accelerate==1.2.1"
+    - "imageio==2.36.1"
+    - "imageio-ffmpeg==0.5.1"
+
+  run:
+    - apt-get update && apt-get install -y git-lfs
+    - git lfs install
+    - mkdir sdxlModel
+    - mkdir loras
+    
+predict: "predict.py:Predictor"
+
