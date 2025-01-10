@@ -9,6 +9,7 @@ from typing import List
 import torch
 from diffusers import LTXImageToVideoPipeline
 from diffusers.utils import export_to_video, load_image
+import math
 
 base_model_path = "Lightricks/LTX-Video"
 #LoRA_PATH = "hfpath/sdxl-beethoven-spectrograms"
@@ -63,7 +64,7 @@ class Predictor(BasePredictor):
         ),
         guidanceScale: float = Input(
             description="Guidance scale (influence of input text on generation)",
-            ge=1.0,
+            ge=0.0,
             le=10.0,
             default=3.0
         ),
@@ -72,12 +73,12 @@ class Predictor(BasePredictor):
             default=97,
             choices=[97, 129, 161, 193, 225, 257],
         ),
-        #num_outputs: int = Input(
-        #    description="Number of outputs.",
-        #    ge=1,
-        #    le=4,
-        #    default=1,
-        #),
+        num_outputs: int = Input(
+            description="Number of outputs.",
+            ge=1,
+            le=4,
+            default=1,
+        ),
         num_inference_steps: int = Input(
             description="Number of denoising steps", ge=1, le=500, default=50
         ),
@@ -88,7 +89,7 @@ class Predictor(BasePredictor):
         seed: int = Input(
             description="Random seed. Leave blank to randomize the seed", default=None
         ),
-    ) -> Path:
+    ) -> List[Path]:
         """Run a single prediction on the model"""
         while (myprompt[-1] == " ") or (myprompt[-1] == "\n"): #remove user whitespaces
             myprompt = myprompt[:-1]
@@ -99,7 +100,28 @@ class Predictor(BasePredictor):
 
         image = load_image(str(imageSource))
 
-        video = self.pipe(
+        if outWidth % 32 != 0:
+            outWidth = math.floor(outWidth/32)*32
+            print(f"WARNING: outWidth must be a multiple of 32, resizing outWidth to {outWidth}")
+        if outHeight % 32 != 0:
+            outHeight = math.floor(outHeight/32)*32
+            print(f"WARNING: outHeight must be a multiple of 32, resizing outHeight to {outHeight}")
+
+        #video = self.pipe(
+        #    image=image,
+        #    prompt=myprompt,
+        #    negative_prompt=negative_prompt,
+        #    width=outWidth,
+        #    height=outHeight,
+        #    num_frames=num_frames,
+        #    decode_timestep=0.03,
+        #    decode_noise_scale=0.025,
+        #    num_inference_steps=num_inference_steps,
+        #    guidance_scale=guidanceScale,
+        #    num_videos_per_prompt=num_outputs,
+        #).frames[0]
+
+        videosObj = self.pipe(
             image=image,
             prompt=myprompt,
             negative_prompt=negative_prompt,
@@ -110,16 +132,16 @@ class Predictor(BasePredictor):
             decode_noise_scale=0.025,
             num_inference_steps=num_inference_steps,
             guidance_scale=guidanceScale,
-            num_videos_per_prompt=1,
-        ).frames[0]
+            num_videos_per_prompt=num_outputs,
+        ).frames
 
-        output_filename = "/tmp/output.mp4"
-        export_to_video(video, output_filename, fps=outFPS)
+        #output_filename = "/tmp/output.mp4"
+        #export_to_video(video, output_filename, fps=outFPS)
         
-        #output_paths = []
-        #for i, _ in enumerate(imagesObj):
-        #    output_path = f"/tmp/out-{i}.png"
-        #    imagesObj[i].save(output_path)
-        #    output_paths.append(Path(output_path))
+        output_paths = []
+        for i, _ in enumerate(videosObj):
+            output_path = f"/tmp/out-{i}.mp4"
+            export_to_video(videosObj[i], output_path, fps=outFPS)
+            output_paths.append(Path(output_path))
             
-        return Path(output_filename)
+        return output_paths
