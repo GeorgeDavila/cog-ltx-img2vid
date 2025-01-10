@@ -76,7 +76,7 @@ class Predictor(BasePredictor):
         num_outputs: int = Input(
             description="Number of outputs.",
             ge=1,
-            le=4,
+            le=8,
             default=1,
         ),
         num_inference_steps: int = Input(
@@ -85,6 +85,18 @@ class Predictor(BasePredictor):
         outFPS: int = Input(
             description="Output FPS",
             default=24,
+        ),
+        decodeTimestepParam: float = Input(
+            description="decodeTimestepParam",
+            ge=0.005,
+            le=1.0,
+            default=0.030
+        ),
+        decodeNoiseScaleParam: float = Input(
+            description="decodeNoiseScaleParam",
+            ge=0.0005,
+            le=1.0,
+            default=0.0250
         ),
         seed: int = Input(
             description="Random seed. Leave blank to randomize the seed", default=None
@@ -128,8 +140,8 @@ class Predictor(BasePredictor):
             width=outWidth,
             height=outHeight,
             num_frames=num_frames,
-            decode_timestep=0.03,
-            decode_noise_scale=0.025,
+            decode_timestep=decodeTimestepParam,
+            decode_noise_scale=decodeNoiseScaleParam,
             num_inference_steps=num_inference_steps,
             guidance_scale=guidanceScale,
             num_videos_per_prompt=num_outputs,
